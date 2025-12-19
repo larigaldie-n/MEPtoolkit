@@ -108,3 +108,7 @@ test_that("Outputs behave normally", {
   expect_output(t_slicer("1.20", "1.2", 60, "2.2", "2.5", 30, ".06",
                          output = TRUE))
 })
+
+test_that("Stops when data is not a dataframe", {
+  expect_error(t_slicer("1.20", "1.2", 60, "2.2", "2.5", 30, ".06", data=c(1, 2, 3)))
+})
