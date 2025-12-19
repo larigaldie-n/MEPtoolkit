@@ -2,32 +2,78 @@
 % Please edit documentation in R/carlisle.R
 \name{carlisle}
 \alias{carlisle}
-\title{Perform a Carlisle test}
+\title{Carlisle test for aggregate unusualness of baseline p-values}
 \usage{
 carlisle(p, output = FALSE)
 }
 \arguments{
-\item{p}{A character vector. Either the p values from tests of differences
-between the groups at baseline, or a T_slicer_res object (the results from a
-t_slicer() call)}
+\item{p}{Either a character vector of reported p-values (formatted as
+strings, e.g. \code{".03"}, \code{"0.12"}, \code{"<.001"}) or a
+\code{T_slicer_res} object produced by \code{\link{t_slicer}}.
+If a character vector is provided, the function treats each element as a
+(possibly rounded) reported p and constructs plausible \code{minimum}
+/ \code{original} / \code{maximum} values via \code{\link{validate_p}}.}
 
-\item{output}{A logical. Optional (default = FALSE). Determines if the
-function should print its output before returning it}
+\item{output}{Logical scalar (default \code{FALSE}). If \code{TRUE} the
+returned \code{Carlisle_res} object is printed before being returned.}
 }
 \value{
-A Carlisle_res object. Either contains a single set of min/RIVETS/max
-results from the Carlisle test if p values were manually provided, or two sets
-of min/RIVETS/max results (once for Student t tests, one for Welch t tests)
-if a T_slicer_res object was provided.
+An object of class \code{Carlisle_res} (an R6 result container).
+When \code{p} is a character vector the returned object contains a single
+vector named \code{Provided_p} with three elements:
+\code{c(min_combined, RIVETS_combined, max_combined)}, where
+\code{RIVETS_combined} is the combined p-value obtained from the
+reported (central) p-values and \code{min_combined} / \code{max_combined}
+are the extreme combined p-values produced by enumerating plausible
+round-off bounds. When \code{p} is a \code{T_slicer_res} object, the
+returned object contains separate \code{Student} and \code{Welch}
+components each structured as \code{c(min, RIVETS, max)}.
 }
 \description{
-A Carlisle test is a method for examining the table of participants'
-baseline characteristics in reports of randomized trials, and checking if
-groups are too consistently different (or similar) than what would be expected
-in case of successful randomization. Takes all p values with the assumption
-of independence of tests and the NULL is true to calculate an aggregated p
-value using a Fisher-Stouffer method.
+Evaluate whether a set of reported baseline-comparison p-values is
+unusually concentrated near 0 or 1 — a diagnostic commonly used to screen
+randomized trials for anomalies in their Table 1 (imbalances or
+improbably similar groups). The function implements an aggregated
+Z-score (Stouffer-style) combination of (possibly rounded) p-values
+and returns the range of possible combined p-values given rounding
+uncertainty. If supplied with the output of \code{\link{t_slicer}}, the
+function performs the aggregation separately for the Student and Welch
+alternatives.
 }
+\details{
+Method and assumptions:
+\itemize{
+\item Each input p-value is treated as possibly rounded; the function
+uses \code{\link{validate_p}} to obtain a \emph{minimum}, \emph{original}
+and \emph{maximum} candidate for each reported p-value and then
+enumerates the Cartesian product of candidate choices to obtain bounds
+on the combined statistic.
+\item For a given set of k independent p-values the
+function uses the Stouffer (inverse-normal / Z-score) method to combine
+them.
+The combination therefore assumes approximate independence of the
+underlying tests and that the global null (all individual nulls true)
+holds under the null distribution.
+\item When a \code{T_slicer_res} is provided the procedure aggregates the
+min/RIVETS/max p-values produced separately for Student and Welch
+t-tests to give two separate combined results (one for each
+t-test assumption).}
+}
+\section{Interpretation and caveats}{
+
+\itemize{
+\item A combined p-value very close to 0 (or very close to 1 using
+the one-sided mapping implemented here) indicates that the baseline
+table contains more extreme small (or large) p-values than
+expected under chance; such departures can reflect genuine
+systematic differences, reporting errors (e.g. mislabelled SD vs
+SE), or data fabrication — the method is a screen, not proof.
+\item The combining method assumes independence of tests; correlated
+baseline variables (e.g. weight and BMI) can invalidate the
+independence assumption and make the combined p-value
+anticonservative. Consider this when interpreting results.}
+}
+
 \examples{
 carlisle(c(".99", ".95", ".98", ".90"), output=TRUE)
 data <- data.frame(m1 = c("1.20", "1.25"), s1 = c("1.2", "1.25"), n1 = c(60, 60),
@@ -37,4 +83,7 @@ res <- t_slicer(m1 = m1, s1 = s1, n1 = n1, m2 = m2, s2 = s2, n2 = n2,
                 data = data, output = TRUE)
 carlisle(res, output = TRUE)
 
+}
+\seealso{
+\code{\link{t_slicer}}
 }

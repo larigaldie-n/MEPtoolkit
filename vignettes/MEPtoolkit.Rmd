@@ -1,0 +1,84 @@
+---
+title: "MEPtoolkit"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{MEPtoolkit}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(MEPtoolkit)
+```
+
+The MEPtoolkit contains a set of functions to check for inconsistencies and
+abnormalities in the data of (medical) papers. The main philosophy of the package
+is to be as charitable as possible with the authors, by not performing calculations
+only on the exact values given. Instead, all values given are assumed to have been
+rounded, and functions return ranges of possible values. This ensures that, should
+inconsistencies be found in statistical results, they cannot be due to the imprecision
+automatically induced by the reporting of rounded numbers.
+
+### RIVETS values and their handling
+
+Across the documentation and output of this package, the rounded input values
+are often referred to as "RIVETS values", as a reference to Brown & Heathers'
+(2019) preprint "Rounded Input Variables, Exact Test Statistics (RIVETS)".
+
+Because of technical constraints, all inputs to functions that would likely be
+rounded numbers *have* to be passed to functions as character strings rather than
+numbers. For instance, a reported mean of 5.50 will need to be passed as "5.50"
+to the function you are trying to use. Internally, such a number would be interpreted
+as ranging from 5.495 to 5.505. However, most functions (unless specified otherwise)
+will not only return the possible range of outputs based on the possible range of
+inputs, but *also* return results at the RIVETS value.
+
+### Main functions and tests
+
+- t_slicer: returns the range of p values using a Student or a Welch
+t test, given the original group means and sds. If original p values are given,
+it also checks if those are potentially consistent using either test.
+
+- carlisle: tests for suspiciously (dis)similarities in the baseline characteristics
+of groups in RCTs, using a Fisher-Stouffer method under the assumption of null
+differences and independence of tests. Based on Carlisle's method (Carlisle, 2017).
+
+- prepost_r: provides different ways to calculate pre vs. post correlations,
+depending on which statistics are available (e.g. standard deviation, t value,
+p value, standard deviation of change).
+
+- anova_one_descriptive: Reconstruct results from a one-way ANOVA from descriptive
+statistics.
+
+- range_killer: robustness check of descriptive statistics (mean and SD) after 
+removing one set of extremes values (minimum & maximum)
+
+### Analyte-related functions and tests
+
+The package includes a reference table of some clinical analytes with
+analytical imprecision and intraindividual biological variation.
+These can be used to compute reliability ceilings and change thresholds, and
+there are a few dedicated functions in the package to automatize those calculations.
+
+- analyte_max_cor: compute the maximum expected pre–post correlation (i.e.
+if there was no person-to-person heterogeneity in true change) for a given analyte
+
+- analyte_cor_check: Flag and quantify pre–post correlation vs. analyte ceilings
+
+### Helper functions
+
+Some functions were originally designed for internal package use, but turn out to
+be useful in some situations for the user. In particular, validation functions
+can be used to automatically extract ranges of values from rounded statistics.
+
+- validate_descriptive: used to return min/RIVETS/max values from statistics
+other than p
+
+- validate_p: same as above, but for p values specifically
